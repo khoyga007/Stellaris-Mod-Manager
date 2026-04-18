@@ -1,6 +1,6 @@
 [package]
 name = "stellarismodmanager"
-version = "0.1.0"
+version = "0.1.1"
 description = "Stellaris Mod Manager"
 authors = ["you"]
 edition = "2021"

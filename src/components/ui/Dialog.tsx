@@ -1,5 +1,4 @@
 import * as RD from "@radix-ui/react-dialog";
-import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { forwardRef, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -17,67 +16,71 @@ interface DialogContentProps {
 
 export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
   ({ children, className, showClose = true, onOpenAutoFocus }, ref) => (
-    <RD.Portal forceMount>
-      <AnimatePresence>
-        <RD.Overlay asChild forceMount>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
-          />
-        </RD.Overlay>
-        <RD.Content asChild forceMount onOpenAutoFocus={onOpenAutoFocus}>
-          <motion.div
-            ref={ref}
-            initial={{ opacity: 0, scale: 0.96, y: 8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: 4 }}
-            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            className={cn(
-              "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
-              "w-[min(92vw,480px)] max-h-[85vh] overflow-hidden flex flex-col",
-              "bg-[var(--color-bg-elevated)] border border-[var(--color-border)]",
-              "rounded-[var(--radius-lg)] shadow-2xl shadow-black/60",
-              "focus:outline-none",
-              className
-            )}
-          >
-            {children}
-            {showClose && (
-              <RD.Close asChild>
-                <button
-                  aria-label="Close"
-                  className="absolute right-3 top-3 h-8 w-8 rounded-[var(--radius-sm)] grid place-items-center text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-hover)] transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </RD.Close>
-            )}
-          </motion.div>
-        </RD.Content>
-      </AnimatePresence>
+    <RD.Portal>
+      <RD.Overlay
+        className={cn(
+          "fixed inset-0 z-50 bg-black/70 backdrop-blur-sm",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out",
+          "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0"
+        )}
+      />
+      <RD.Content
+        ref={ref}
+        onOpenAutoFocus={onOpenAutoFocus}
+        className={cn(
+          "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
+          "w-[min(92vw,480px)] max-h-[85vh] overflow-hidden flex flex-col",
+          "bg-[var(--color-bg-elevated)] border border-[var(--color-border)]",
+          "rounded-[var(--radius-lg)] shadow-2xl shadow-black/60 focus:outline-none",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out",
+          "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
+          "data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
+          "data-[state=open]:slide-in-from-bottom-2",
+          "duration-150",
+          className
+        )}
+      >
+        {children}
+        {showClose && (
+          <RD.Close asChild>
+            <button
+              aria-label="Close"
+              className="absolute right-3 top-3 h-8 w-8 rounded-[var(--radius-sm)] grid place-items-center text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-hover)] transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </RD.Close>
+        )}
+      </RD.Content>
     </RD.Portal>
   )
 );
 DialogContent.displayName = "DialogContent";
 
 export function DialogHeader({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={cn("px-6 pt-6 pb-3", className)}>{children}</div>
-  );
+  return <div className={cn("px-6 pt-6 pb-3", className)}>{children}</div>;
 }
 
 export function DialogTitle({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <RD.Title className={cn("text-lg font-semibold font-display tracking-tight text-[var(--color-text)]", className)}>
+    <RD.Title
+      className={cn(
+        "text-lg font-semibold font-display tracking-tight text-[var(--color-text)]",
+        className
+      )}
+    >
       {children}
     </RD.Title>
   );
 }
 
-export function DialogDescription({ children, className }: { children: ReactNode; className?: string }) {
+export function DialogDescription({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <RD.Description
       className={cn(
