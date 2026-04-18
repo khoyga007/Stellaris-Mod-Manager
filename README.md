@@ -17,7 +17,7 @@ Grab the latest Windows installer from the [**Releases page**](https://github.co
 - `Stellar Mod Manager_<version>_x64-setup.exe` — NSIS installer (recommended, smaller)
 - `Stellar Mod Manager_<version>_x64_en-US.msi` — MSI installer (for group policy / silent install)
 
-Current release: **[v0.1.0](https://github.com/khoyga007/Stellaris-Mod-Manager/releases/tag/v0.1.0)**
+Current release: **[v0.1.1](https://github.com/khoyga007/Stellaris-Mod-Manager/releases/tag/v0.1.1)**
 
 ---
 
@@ -114,7 +114,7 @@ Tải installer Windows mới nhất ở [**trang Releases**](https://github.com
 - `Stellar Mod Manager_<version>_x64-setup.exe` — NSIS installer (khuyên dùng, nhẹ hơn)
 - `Stellar Mod Manager_<version>_x64_en-US.msi` — MSI installer (cho group policy / silent install)
 
-Bản hiện tại: **[v0.1.0](https://github.com/khoyga007/Stellaris-Mod-Manager/releases/tag/v0.1.0)**
+Bản hiện tại: **[v0.1.1](https://github.com/khoyga007/Stellaris-Mod-Manager/releases/tag/v0.1.1)**
 
 ## Tính năng
 
