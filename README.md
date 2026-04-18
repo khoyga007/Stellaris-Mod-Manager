@@ -4,7 +4,18 @@ A fast, modern mod manager for Stellaris — works with **both Steam and cracked
 
 *(English below — [Tiếng Việt](#tiếng-việt) bên dưới)*
 
-![Tauri 2](https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri) ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react) ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript) ![Rust](https://img.shields.io/badge/Rust-stable-orange?logo=rust)
+![Tauri 2](https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri) ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react) ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript) ![Rust](https://img.shields.io/badge/Rust-stable-orange?logo=rust) [![Latest Release](https://img.shields.io/github/v/release/khoyga007/Stellaris-Mod-Manager?color=brightgreen)](https://github.com/khoyga007/Stellaris-Mod-Manager/releases/latest)
+
+---
+
+## Download
+
+Grab the latest Windows installer from the [**Releases page**](https://github.com/khoyga007/Stellaris-Mod-Manager/releases/latest):
+
+- `Stellar Mod Manager_<version>_x64-setup.exe` — NSIS installer (recommended, smaller)
+- `Stellar Mod Manager_<version>_x64_en-US.msi` — MSI installer (for group policy / silent install)
+
+Current release: **[v0.1.0](https://github.com/khoyga007/Stellaris-Mod-Manager/releases/tag/v0.1.0)**
 
 ---
 
@@ -93,6 +104,15 @@ Active development. See commit history for recent changes.
 # Stellar Mod Manager *(Tiếng Việt)*
 
 Trình quản lý mod Stellaris nhanh, hiện đại — **chạy được cho cả bản Steam lẫn bản crack/offline**. Tải mod Workshop qua SteamCMD anonymous (có fallback sang các mirror công khai), quản lý load order, phát hiện xung đột, giao diện dark đẹp.
+
+## Tải về
+
+Tải installer Windows mới nhất ở [**trang Releases**](https://github.com/khoyga007/Stellaris-Mod-Manager/releases/latest):
+
+- `Stellar Mod Manager_<version>_x64-setup.exe` — NSIS installer (khuyên dùng, nhẹ hơn)
+- `Stellar Mod Manager_<version>_x64_en-US.msi` — MSI installer (cho group policy / silent install)
+
+Bản hiện tại: **[v0.1.0](https://github.com/khoyga007/Stellaris-Mod-Manager/releases/tag/v0.1.0)**
 
 ## Tính năng
 
