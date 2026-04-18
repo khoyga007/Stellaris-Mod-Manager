@@ -6,6 +6,7 @@ import { Library, Plus, Play, Pencil, Trash2, Calendar, Package2 } from "lucide-
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { Preset, ModInfo } from "@/types";
+import { useConfirm } from "@/lib/confirm";
 
 interface CollectionsViewProps {
   mods: ModInfo[];
@@ -13,6 +14,7 @@ interface CollectionsViewProps {
 }
 
 export function CollectionsView({ mods, onApplied }: CollectionsViewProps) {
+  const confirm = useConfirm();
   const [presets, setPresets] = useState<Preset[]>([]);
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
@@ -84,7 +86,13 @@ export function CollectionsView({ mods, onApplied }: CollectionsViewProps) {
   }
 
   async function remove(p: Preset) {
-    if (!confirm(`Delete preset "${p.name}"?`)) return;
+    const ok = await confirm({
+      title: "Delete preset",
+      message: `Delete preset "${p.name}"?`,
+      kind: "danger",
+      confirmText: "Delete",
+    });
+    if (!ok) return;
     try {
       await invoke("delete_preset", { id: p.id });
       refresh();

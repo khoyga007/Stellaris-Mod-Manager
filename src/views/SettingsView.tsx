@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { ask, open as openDialog } from "@tauri-apps/plugin-dialog";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { useConfirm } from "@/lib/confirm";
 import { Settings, FolderSearch, HardDrive, Info, Database, MoveRight, Loader2, X, Palette, Check, Gamepad2, Zap, History, Undo2 } from "lucide-react";
 import type { DlcBackup, MigrateReport, StellarisPaths } from "@/types";
 import { Button } from "@/components/ui/Button";
@@ -18,6 +19,7 @@ interface SettingsViewProps {
 
 export function SettingsView({ paths, onPathsChanged, onRefreshMods }: SettingsViewProps) {
   const { lang, setLang, t } = useLang();
+  const confirm = useConfirm();
   const [exePath, setExePath] = useState("");
   const [migrating, setMigrating] = useState(false);
   const [theme, setTheme] = useState<ThemeId>(loadTheme());
@@ -38,10 +40,13 @@ export function SettingsView({ paths, onPathsChanged, onRefreshMods }: SettingsV
   }, []);
 
   async function restoreBackup(name: string) {
-    const ok = await ask(
-      `Restore this backup? Your current mod load order will be overwritten (a snapshot of it is saved first).`,
-      { title: "Restore backup", kind: "warning" }
-    );
+    const ok = await confirm({
+      title: "Restore backup",
+      message:
+        "Restore this backup? Your current mod load order will be overwritten (a snapshot of it is saved first).",
+      kind: "warning",
+      confirmText: "Restore",
+    });
     if (!ok) return;
     try {
       await invoke("restore_dlc_backup", { name });
@@ -133,10 +138,12 @@ export function SettingsView({ paths, onPathsChanged, onRefreshMods }: SettingsV
       toast.error("Set a mod storage directory first.");
       return;
     }
-    const ok = await ask(
-      `Move all existing mod content into:\n${paths.content_dir}\n\nDescriptors stay in the user dir. This can take a while for large mods.`,
-      { title: "Migrate mods", kind: "warning" }
-    );
+    const ok = await confirm({
+      title: "Migrate mods",
+      message: `Move all existing mod content into:\n${paths.content_dir}\n\nDescriptors stay in the user dir. This can take a while for large mods.`,
+      kind: "warning",
+      confirmText: "Migrate",
+    });
     if (!ok) return;
     setMigrating(true);
     try {

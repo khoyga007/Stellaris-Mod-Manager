@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { ask } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
+import { useConfirm } from "@/lib/confirm";
 
 import { Sidebar, type View } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
@@ -28,6 +28,7 @@ export default function App() {
   const [updates, setUpdates] = useState<Record<string, UpdateStatus>>({});
   const [checkingUpdates, setCheckingUpdates] = useState(false);
   const [gameVersion, setGameVersion] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
@@ -161,9 +162,11 @@ export default function App() {
       sections.push(`${problems.length} mod${problems.length > 1 ? "s have" : " has"} unmet dependencies:\n${lines.join("\n")}${more}`);
     }
     if (sections.length > 0) {
-      const ok = await ask(sections.join("\n\n") + "\n\nLaunch anyway?", {
+      const ok = await confirm({
         title: "Pre-launch check",
+        message: sections.join("\n\n") + "\n\nLaunch anyway?",
         kind: "warning",
+        confirmText: "Launch anyway",
       });
       if (!ok) return;
     }
@@ -178,7 +181,12 @@ export default function App() {
   }
 
   async function deleteMod(id: string) {
-    const ok = await ask("Delete this mod permanently?", { title: "Delete mod", kind: "warning" });
+    const ok = await confirm({
+      title: "Delete mod",
+      message: "Delete this mod permanently?",
+      kind: "danger",
+      confirmText: "Delete",
+    });
     if (!ok) return;
     try {
       await invoke("delete_mod", { id });

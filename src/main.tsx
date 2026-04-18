@@ -4,11 +4,14 @@ import App from "./App";
 import "./index.css";
 import { Toaster } from "sonner";
 import { LangProvider } from "@/lib/i18n";
+import { ConfirmProvider } from "@/lib/confirm";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <LangProvider>
-      <App />
+      <ConfirmProvider>
+        <App />
+      </ConfirmProvider>
     </LangProvider>
     <Toaster
       position="bottom-right"
