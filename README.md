@@ -6,6 +6,8 @@ A fast, modern mod manager for Stellaris — works with **both Steam and cracked
 
 ![Tauri 2](https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri) ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react) ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript) ![Rust](https://img.shields.io/badge/Rust-stable-orange?logo=rust) [![Latest Release](https://img.shields.io/github/v/release/khoyga007/Stellaris-Mod-Manager?color=brightgreen)](https://github.com/khoyga007/Stellaris-Mod-Manager/releases/latest)
 
+![Stellar Mod Manager — Mods view with filters, tags, and two-pane load order](docs/screenshots/mods-view.png)
+
 ---
 
 ## Download
