@@ -272,6 +272,23 @@ pub fn generate_patch(
             ConflictKind::Mixed => mix_c += 1,
         }
 
+        // Only localisation (.yml) merge is safe right now.
+        // PDX serializer is lossy:
+        // - BTreeMap reorders keys (breaks GUI z-order)
+        // - Operators `>=`/`<`/`<>` collapse to `=` (breaks triggers)
+        // - @constants + comments not preserved
+        // - Wrapper expansion semantics iffy for interface containers
+        // Refuse to merge PDX script — engine load-order override works fine.
+        let lower = fc.file.to_ascii_lowercase();
+        let is_yml = lower.ends_with(".yml");
+        if !is_yml {
+            files_skipped.push(SkippedFile {
+                file: fc.file.clone(),
+                reason: "pdx script merge disabled — serializer lossy, would corrupt game. Use load order instead.".into(),
+            });
+            continue;
+        }
+
         let file_res = all_resolutions.get(&fc.file).unwrap_or(&empty_res);
         let is_loc = fc.file.to_ascii_lowercase().ends_with(".yml");
         let body = if is_loc {
@@ -331,6 +348,23 @@ pub fn generate_patch(
         files_written.push(fc.file.clone());
     }
 
+    // Nothing written → don't leave behind an empty phantom mod that
+    // would appear in dlc_load.json and potentially crash the launcher.
+    let launcher_mod_path = PathBuf::from(&paths.mod_dir).join(format!("{patch_id}.mod"));
+    if files_written.is_empty() {
+        fs::remove_dir_all(&patch_folder).ok();
+        fs::remove_file(&launcher_mod_path).ok();
+        return Ok(PatchGenReport {
+            patch_id,
+            patch_folder: patch_folder.to_string_lossy().into_owned(),
+            files_written,
+            files_skipped,
+            full_override_count: full_c,
+            partial_count: part_c,
+            mixed_count: mix_c,
+        });
+    }
+
     let desc = Descriptor {
         name: Some(format!("!!! Stellar Patch — {}", collection_name)),
         version: Some("1.0.0".into()),
@@ -347,7 +381,6 @@ pub fn generate_patch(
     write_descriptor(&patch_folder.join("descriptor.mod"), &desc)?;
 
     // Launcher .mod file next to other mod descriptors so Stellaris sees it.
-    let launcher_mod_path = PathBuf::from(&paths.mod_dir).join(format!("{patch_id}.mod"));
     let launcher_desc = Descriptor {
         path: Some(patch_folder.to_string_lossy().into_owned()),
         ..desc
