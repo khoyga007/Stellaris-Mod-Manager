@@ -1,4 +1,5 @@
 use crate::mods::ModInfo;
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -21,6 +22,26 @@ enum Bucket {
 }
 
 impl Bucket {
+    fn label(self) -> &'static str {
+        match self {
+            Bucket::AuthorTop => "author-top (~)",
+            Bucket::Framework => "framework/library",
+            Bucket::TotalConversion => "total conversion",
+            Bucket::Overhaul => "overhaul",
+            Bucket::Gameplay => "gameplay",
+            Bucket::Events => "events/story",
+            Bucket::Species => "species/portraits",
+            Bucket::Graphics => "graphics",
+            Bucket::Sound => "sound/music",
+            Bucket::Balance => "balance",
+            Bucket::Fixes => "fixes",
+            Bucket::UIBottom => "ui",
+            Bucket::Patch => "patch/compat",
+            Bucket::AuthorOverride => "author-override (!)",
+            Bucket::ForceBottom => "force-bottom (zz_)",
+        }
+    }
+
     fn order(self) -> i32 {
         match self {
             Bucket::AuthorTop => -10,
@@ -204,6 +225,187 @@ pub fn sort_mods(mods: &[ModInfo]) -> Vec<String> {
 
 fn normalize_name(s: &str) -> String {
     s.trim().trim_start_matches(['~', '!']).trim().to_lowercase()
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "kind")]
+pub enum LoadOrderIssue {
+    MissingDependency {
+        mod_id: String,
+        mod_name: String,
+        missing: String,
+    },
+    Cycle {
+        mod_ids: Vec<String>,
+        mod_names: Vec<String>,
+    },
+    OutOfOrder {
+        mod_id: String,
+        mod_name: String,
+        current_index: usize,
+        suggested_index: usize,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModPlan {
+    pub mod_id: String,
+    pub mod_name: String,
+    pub suggested_index: usize,
+    pub current_index: Option<usize>,
+    pub bucket: String,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LoadOrderAnalysis {
+    pub suggested: Vec<String>,
+    pub plan: Vec<ModPlan>,
+    pub issues: Vec<LoadOrderIssue>,
+}
+
+pub fn analyze(mods: &[ModInfo]) -> LoadOrderAnalysis {
+    let suggested = sort_mods(mods);
+    let enabled: Vec<&ModInfo> = mods.iter().filter(|m| m.enabled).collect();
+    let name_of: HashMap<&str, &str> =
+        enabled.iter().map(|m| (m.id.as_str(), m.name.as_str())).collect();
+    let bucket_of: HashMap<String, Bucket> =
+        enabled.iter().map(|m| (m.id.clone(), classify(m))).collect();
+    let name_to_id: HashMap<String, String> = enabled
+        .iter()
+        .map(|m| (normalize_name(&m.name), m.id.clone()))
+        .collect();
+
+    let mut issues = Vec::new();
+
+    // Missing deps.
+    for m in &enabled {
+        for dep in &m.dependencies {
+            let key = normalize_name(dep);
+            if !name_to_id.contains_key(&key) {
+                issues.push(LoadOrderIssue::MissingDependency {
+                    mod_id: m.id.clone(),
+                    mod_name: m.name.clone(),
+                    missing: dep.clone(),
+                });
+            }
+        }
+    }
+
+    // Cycles via DFS over dep graph.
+    let mut graph: HashMap<String, Vec<String>> = HashMap::new();
+    for m in &enabled {
+        for dep in &m.dependencies {
+            if let Some(dep_id) = name_to_id.get(&normalize_name(dep)) {
+                if dep_id != &m.id {
+                    graph.entry(dep_id.clone()).or_default().push(m.id.clone());
+                }
+            }
+        }
+    }
+    let mut visited: HashMap<String, u8> = HashMap::new();
+    let mut stack: Vec<String> = Vec::new();
+    for m in &enabled {
+        if !visited.contains_key(&m.id) {
+            detect_cycle(&m.id, &graph, &mut visited, &mut stack, &name_of, &mut issues);
+        }
+    }
+
+    // Compare current dlc_load order to suggested.
+    let mut current: Vec<&ModInfo> = enabled.clone();
+    current.sort_by_key(|m| m.load_order);
+    let current_index_of: HashMap<String, usize> = current
+        .iter()
+        .enumerate()
+        .map(|(i, m)| (m.id.clone(), i))
+        .collect();
+    let suggested_index_of: HashMap<String, usize> = suggested
+        .iter()
+        .enumerate()
+        .map(|(i, id)| (id.clone(), i))
+        .collect();
+
+    let mut plan = Vec::new();
+    for (i, id) in suggested.iter().enumerate() {
+        let mod_name = name_of.get(id.as_str()).copied().unwrap_or(id.as_str()).to_string();
+        let bucket = bucket_of
+            .get(id)
+            .copied()
+            .unwrap_or(Bucket::Gameplay)
+            .label()
+            .to_string();
+        let cur = current_index_of.get(id).copied();
+        let reason = format!("bucket: {}", bucket);
+        plan.push(ModPlan {
+            mod_id: id.clone(),
+            mod_name: mod_name.clone(),
+            suggested_index: i,
+            current_index: cur,
+            bucket,
+            reason,
+        });
+
+        if let Some(cur_i) = cur {
+            if cur_i != i {
+                issues.push(LoadOrderIssue::OutOfOrder {
+                    mod_id: id.clone(),
+                    mod_name,
+                    current_index: cur_i,
+                    suggested_index: i,
+                });
+            }
+        }
+    }
+
+    // Suppress out-of-order noise if all cur_i == suggested_i implied fine.
+    let _ = suggested_index_of;
+
+    LoadOrderAnalysis {
+        suggested,
+        plan,
+        issues,
+    }
+}
+
+fn detect_cycle(
+    node: &str,
+    graph: &HashMap<String, Vec<String>>,
+    visited: &mut HashMap<String, u8>,
+    stack: &mut Vec<String>,
+    name_of: &HashMap<&str, &str>,
+    issues: &mut Vec<LoadOrderIssue>,
+) {
+    visited.insert(node.to_string(), 1);
+    stack.push(node.to_string());
+    if let Some(neighbors) = graph.get(node) {
+        for n in neighbors {
+            match visited.get(n).copied() {
+                None => detect_cycle(n, graph, visited, stack, name_of, issues),
+                Some(1) => {
+                    if let Some(start) = stack.iter().position(|x| x == n) {
+                        let ids: Vec<String> = stack[start..].to_vec();
+                        let names: Vec<String> = ids
+                            .iter()
+                            .map(|id| {
+                                name_of
+                                    .get(id.as_str())
+                                    .copied()
+                                    .unwrap_or(id.as_str())
+                                    .to_string()
+                            })
+                            .collect();
+                        issues.push(LoadOrderIssue::Cycle {
+                            mod_ids: ids,
+                            mod_names: names,
+                        });
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    stack.pop();
+    visited.insert(node.to_string(), 2);
 }
 
 fn apply_patch_dependencies(ids: &mut Vec<String>, enabled: &[&ModInfo]) {

@@ -7,11 +7,12 @@ import {
   Sparkles,
   Library,
   AlertTriangle,
+  ListOrdered,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLang } from "@/lib/i18n";
 
-export type View = "mods" | "download" | "collections" | "conflicts" | "logs" | "settings";
+export type View = "mods" | "download" | "collections" | "conflicts" | "load_order" | "logs" | "settings";
 
 interface SidebarProps {
   view: View;
@@ -27,6 +28,7 @@ const nav: { id: View; key: string; icon: React.ComponentType<{ className?: stri
   { id: "download", key: "nav.download", icon: Download },
   { id: "collections", key: "nav.collections", icon: Library },
   { id: "conflicts", key: "nav.conflicts", icon: AlertTriangle },
+  { id: "load_order", key: "nav.loadOrder", icon: ListOrdered },
   { id: "logs", key: "nav.logs", icon: Terminal },
   { id: "settings", key: "nav.settings", icon: Settings },
 ];

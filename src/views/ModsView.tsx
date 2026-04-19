@@ -16,7 +16,7 @@ import {
   DownloadCloud,
   Filter,
 } from "lucide-react";
-import type { ModInfo, UpdateStatus } from "@/types";
+import type { ModInfo, UpdateStatus, LoadOrderAnalysis } from "@/types";
 import { computeMissing } from "@/lib/deps";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -240,8 +240,27 @@ export function ModsView({
   async function autoSort() {
     setSorting(true);
     try {
-      const res = await invoke<{ current: string[]; suggested: string[] }>("preview_auto_sort");
-      setPreview(res);
+      const analysis = await invoke<LoadOrderAnalysis>("analyze_load_order");
+      const current = mods.filter((m) => m.enabled).map((m) => m.id);
+      setPreview({ current, suggested: analysis.suggested });
+
+      const cycles = analysis.issues.filter((i) => i.kind === "Cycle");
+      const missing = analysis.issues.filter((i) => i.kind === "MissingDependency");
+      if (cycles.length > 0) {
+        toast.warning(
+          `${cycles.length} dependency cycle(s) detected — check logs`,
+        );
+        cycles.slice(0, 3).forEach((c) => {
+          if (c.kind === "Cycle") console.warn("Cycle:", c.mod_names.join(" → "));
+        });
+      }
+      if (missing.length > 0) {
+        toast.warning(`${missing.length} missing dependency reference(s)`);
+        missing.slice(0, 3).forEach((m) => {
+          if (m.kind === "MissingDependency")
+            console.warn(`${m.mod_name} needs "${m.missing}" (not installed)`);
+        });
+      }
     } catch (e) {
       toast.error(`${e}`);
     } finally {

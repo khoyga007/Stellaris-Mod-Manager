@@ -12,6 +12,7 @@ import { LogsView } from "@/views/LogsView";
 import { SettingsView } from "@/views/SettingsView";
 import { CollectionsView } from "@/views/CollectionsView";
 import { ConflictsView } from "@/views/ConflictsView";
+import { LoadOrderView } from "@/views/LoadOrderView";
 import type { DownloadProgress, ModInfo, StellarisPaths, UpdateStatus } from "@/types";
 import { applyTheme, loadTheme } from "@/lib/theme";
 import { computeMissing } from "@/lib/deps";
@@ -259,6 +260,7 @@ export default function App() {
           )}
           {view === "collections" && <CollectionsView mods={mods} onApplied={refresh} />}
           {view === "conflicts" && <ConflictsView />}
+          {view === "load_order" && <LoadOrderView onApplied={refresh} />}
           {view === "logs" && <LogsView />}
           {view === "settings" && (
             <SettingsView paths={paths} onPathsChanged={setPaths} onRefreshMods={refresh} />

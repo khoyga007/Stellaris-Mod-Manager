@@ -6,6 +6,10 @@ mod descriptor;
 mod log_tail;
 mod mods;
 mod paths;
+mod loc_parser;
+mod patches;
+mod pdx_parser;
+mod resolutions;
 mod steamcmd;
 mod updates;
 mod workshop;
@@ -600,6 +604,88 @@ fn analyze_conflicts(state: State<AppState>) -> Result<conflicts::ConflictReport
     Ok(conflicts::analyze(&ms))
 }
 
+#[tauri::command]
+fn analyze_conflicts_deep(
+    state: State<AppState>,
+) -> Result<conflicts::DeepConflictReport, String> {
+    let p = state.paths.lock().unwrap().clone();
+    let ms = mods::list(&p).map_err(|e| e.to_string())?;
+    Ok(conflicts::analyze_deep(&ms))
+}
+
+#[tauri::command]
+fn generate_patch_mod(
+    state: State<AppState>,
+    collection_name: String,
+) -> Result<patches::PatchGenReport, String> {
+    let p = state.paths.lock().unwrap().clone();
+    patches::generate_patch(&p, &collection_name).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_resolutions(collection_name: String) -> Result<
+    std::collections::BTreeMap<String, std::collections::BTreeMap<String, String>>,
+    String,
+> {
+    Ok(resolutions::get(&collection_name))
+}
+
+#[tauri::command]
+fn export_resolutions(collection_name: String, path: String) -> Result<(), String> {
+    let data = resolutions::get(&collection_name);
+    let json = serde_json::to_string_pretty(&data).map_err(|e| e.to_string())?;
+    std::fs::write(&path, json).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn import_resolutions(collection_name: String, path: String) -> Result<usize, String> {
+    let raw = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    let parsed: std::collections::BTreeMap<
+        String,
+        std::collections::BTreeMap<String, String>,
+    > = serde_json::from_str(&raw).map_err(|e| format!("parse JSON: {e}"))?;
+    let mut count = 0usize;
+    for (file, picks) in &parsed {
+        let map: std::collections::BTreeMap<String, Option<String>> = picks
+            .iter()
+            .map(|(k, v)| (k.clone(), Some(v.clone())))
+            .collect();
+        count += map.len();
+        resolutions::set_many(&collection_name, file, &map).map_err(|e| e.to_string())?;
+    }
+    Ok(count)
+}
+
+#[tauri::command]
+fn set_resolutions_bulk(
+    collection_name: String,
+    file: String,
+    picks: std::collections::BTreeMap<String, Option<String>>,
+) -> Result<(), String> {
+    resolutions::set_many(&collection_name, &file, &picks).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_file_entries(
+    state: State<AppState>,
+    file: String,
+    mod_id: String,
+) -> Result<std::collections::BTreeMap<String, String>, String> {
+    let p = state.paths.lock().unwrap().clone();
+    patches::get_file_entries(&p, &file, &mod_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn set_resolution(
+    collection_name: String,
+    file: String,
+    ident: String,
+    mod_id: Option<String>,
+) -> Result<(), String> {
+    resolutions::set_entry(&collection_name, &file, &ident, mod_id.as_deref())
+        .map_err(|e| e.to_string())
+}
+
 // ---------- Auto-sort ----------
 #[derive(Serialize)]
 struct SortPreview {
@@ -623,6 +709,13 @@ fn apply_auto_sort(state: State<AppState>) -> Result<Vec<String>, String> {
     let suggested = auto_sort::sort_mods(&ms);
     mods::set_order(&p, &suggested).map_err(|e| e.to_string())?;
     Ok(suggested)
+}
+
+#[tauri::command]
+fn analyze_load_order(state: State<AppState>) -> Result<auto_sort::LoadOrderAnalysis, String> {
+    let p = state.paths.lock().unwrap().clone();
+    let ms = mods::list(&p).map_err(|e| e.to_string())?;
+    Ok(auto_sort::analyze(&ms))
 }
 
 // ---------- Updates ----------
@@ -751,8 +844,17 @@ pub fn run() {
             open_workshop_downloader,
             fetch_collection,
             analyze_conflicts,
+            analyze_conflicts_deep,
+            generate_patch_mod,
+            get_resolutions,
+            set_resolution,
+            set_resolutions_bulk,
+            export_resolutions,
+            import_resolutions,
+            get_file_entries,
             preview_auto_sort,
             apply_auto_sort,
+            analyze_load_order,
             check_mod_updates,
             list_presets,
             create_preset,
